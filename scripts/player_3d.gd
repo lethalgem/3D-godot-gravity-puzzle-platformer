@@ -20,6 +20,8 @@ enum STATE {
 	AIMING,
 }
 
+@onready var camera_anchor: Node3D = %CameraAnchor
+
 func _physics_process(delta: float) -> void:
 	# Handle State change ---
 	if Input.is_action_pressed("aim"):
@@ -38,7 +40,8 @@ func _physics_process(delta: float) -> void:
 func _process_platforming(delta:float) -> void:
 	# Handle movement ---
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y) # inverse to account for positive player axes
+	# inverse to account for positive player axes and rotate relative to camera forward
+	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y)
 	var desired_ground_velocity := max_speed * direction
 	var steering_vector := desired_ground_velocity - velocity
 	steering_vector.y = 0.0
@@ -66,12 +69,10 @@ func _process_platforming(delta:float) -> void:
 	%DebugLookAtPoint.global_position = velocity.normalized() + global_position
 
 func _process_aiming(delta: float) -> void:
-	# Handle aiming ---
-	print("aiming")
-
 	# Handle movement ---
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y) # inverse to account for positive player axes
+	# inverse to account for positive player axes and rotate relative to camera forward
+	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y)
 	var desired_ground_velocity := max_speed_aiming * direction
 	var steering_vector := desired_ground_velocity - velocity
 	steering_vector.y = 0.0
@@ -83,9 +84,15 @@ func _process_aiming(delta: float) -> void:
 	velocity += GRAVITY * delta
 	move_and_slide()
 
-	var look_at_direction = Vector3(0, 0, -1) + global_position # TODO: when camera is tied to mouse, have this vector match forward for mouse
+	# Handle skin animation ---
+	if is_on_floor() and not direction.is_zero_approx():
+		skin.move()
+	else:
+		skin.idle()
+
+	var look_at_direction = Vector3(0, 0, -1).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y) + global_position
 	if not (look_at_direction - global_position).is_zero_approx():
 		skin.look_at(look_at_direction)
 
 	# follow player movement vector, not skin's
-	%DebugLookAtPoint.global_position = Vector3(0, 0, 1) + global_position
+	%DebugLookAtPoint.global_position = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y) + global_position
