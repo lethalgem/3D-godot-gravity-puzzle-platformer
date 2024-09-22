@@ -9,7 +9,7 @@ class_name Player3D extends CharacterBody3D
 
 func _physics_process(delta: float) -> void:
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := Vector3(input_vector.x, 0.0, input_vector.y)
+	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y) # inverse to account for positive player axes
 	var desired_ground_velocity := max_speed * direction
 	var steering_vector := desired_ground_velocity - velocity
 	steering_vector.y = 0.0
@@ -30,7 +30,9 @@ func _physics_process(delta: float) -> void:
 	# multiply by inverse x and y to account for skin's local axes.
 	# Add position to make everything relative to where the player is
 	var look_at_direction = (velocity * Vector3(-1, 1 , -1)).normalized() + global_position
-	skin.look_at(look_at_direction)
+	if not (look_at_direction - global_position).is_zero_approx():
+		print(str(look_at_direction))
+		skin.look_at(look_at_direction)
 
 	# multiply by inverse x and y to account for skin's axes
-	%DebugLookAtPoint.global_position = look_at_direction # TODO: Put this in front of the character. Currently moves behind and is a good opportunity to make sure I understand simple vector math
+	%DebugLookAtPoint.global_position = velocity.normalized() + global_position
