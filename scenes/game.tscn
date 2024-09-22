@@ -1,8 +1,10 @@
-[gd_scene load_steps=7 format=3 uid="uid://bh2vbtqppehd7"]
+[gd_scene load_steps=9 format=3 uid="uid://bh2vbtqppehd7"]
 
 [ext_resource type="Script" path="res://scripts/player_3d.gd" id="1_6sx0b"]
+[ext_resource type="Script" path="res://scripts/game.gd" id="1_mj0j6"]
 [ext_resource type="PackedScene" uid="uid://prh35jb6tjtd" path="res://assets/models/sophia/sophia_skin.tscn" id="2_uhobi"]
 [ext_resource type="Script" path="res://scripts/camera_3d.gd" id="3_156ww"]
+[ext_resource type="Script" path="res://scripts/camera_anchor.gd" id="3_c3sdl"]
 
 [sub_resource type="Environment" id="Environment_ef70l"]
 background_mode = 1
@@ -21,6 +23,7 @@ radius = 0.6
 albedo_color = Color(1, 0.152941, 1, 1)
 
 [node name="Game" type="Node3D"]
+script = ExtResource("1_mj0j6")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
@@ -49,6 +52,7 @@ unique_name_in_owner = true
 
 [node name="CameraAnchor" type="Node3D" parent="Player3D"]
 transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1.1, 0)
+script = ExtResource("3_c3sdl")
 
 [node name="Camera3D" type="Camera3D" parent="Player3D/CameraAnchor"]
 transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 4.59, 10)
