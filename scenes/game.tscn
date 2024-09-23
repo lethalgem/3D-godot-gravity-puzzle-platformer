@@ -46,6 +46,12 @@ use_collision = true
 size = Vector3(23, 31, 19)
 material = SubResource("StandardMaterial3D_gcn8a")
 
+[node name="CSGBox3D2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -15.5, 36)
+use_collision = true
+size = Vector3(23, 31, 19)
+material = SubResource("StandardMaterial3D_gcn8a")
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.819152, 0.554032, -0.148452, 0.196175, 0.51383, 0.835161, 0.538985, 0.655001, -0.529592, 0, 3, 2)
 light_energy = 1.5
@@ -58,6 +64,7 @@ environment = SubResource("Environment_ef70l")
 
 [node name="Player3D" type="CharacterBody3D" parent="."]
 script = ExtResource("1_6sx0b")
+jump_velocity = 15.0
 camera_position_aiming = Vector3(-2.005, 4.435, -10)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player3D"]
