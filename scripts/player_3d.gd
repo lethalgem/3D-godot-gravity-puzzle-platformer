@@ -25,7 +25,7 @@ enum STATE {
 @export_group("STATE AIMING")
 ## The maximum speed the player can move at while aiming in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed_aiming := 3.0
-@export_range(1, 179, 1) var camera_fov_aiming:= 22
+@export_range(1, 179, 1) var camera_fov_aiming:= 18
 @export var camera_position_aiming := Vector3(-0.995, 1.635, -10)
 
 @onready var skin: SophiaSkin3D = %SophiaSkin
