@@ -11,21 +11,22 @@ enum STATE {
 	AIMING,
 }
 
+@export_range(1, 50.0, 0.1) var camera_zoom_speed := 40.0
+## Controls how quickly the player accelerates and turns on the ground.
+@export_range(1.0, 50.0, 0.1) var steering_factor := 20.0
+
 @export_group("STATE PLATFORMING")
 ## The maximum speed the player can move at in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed := 6.0
-## Controls how quickly the player accelerates and turns on the ground.
-@export_range(1.0, 50.0, 0.1) var steering_factor := 20.0
 @export_range(1, 179, 1) var camera_fov:= 38
-@export var camera_position:= Vector3(0, 4.59, -10)
-@export var camera_rotation:= Vector3(deg_to_rad(-20), deg_to_rad(180), deg_to_rad(0))
+@export var camera_position := Vector3(0, 4.59, -10)
+@export var camera_rotation := Vector3(deg_to_rad(-20), deg_to_rad(180), deg_to_rad(0))
 
 @export_group("STATE AIMING")
 ## The maximum speed the player can move at while aiming in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed_aiming := 3.0
 @export_range(1, 179, 1) var camera_fov_aiming:= 22
-@export var camera_position_aiming:= Vector3(-0.995, 1.635, -10)
-@export var camera_rotation_aiming:= Vector3(deg_to_rad(-5), deg_to_rad(180), deg_to_rad(0))
+@export var camera_position_aiming := Vector3(-0.995, 1.635, -10)
 
 @onready var skin: SophiaSkin3D = %SophiaSkin
 @onready var camera_anchor: Node3D = %CameraAnchor
@@ -79,9 +80,8 @@ func _process_platforming(delta:float) -> void:
 	%DebugLookAtPoint.global_position = velocity.normalized() + global_position
 
 	# Handle camera ---
-	camera_3D.position = camera_position
-	camera_3D.rotation = camera_rotation
-	camera_3D.fov = camera_fov
+	camera_3D.position = camera_3D.position.lerp(camera_position, camera_zoom_speed * delta)
+	camera_3D.fov = lerpf(camera_3D.fov, camera_fov, camera_zoom_speed * delta)
 
 func _process_aiming(delta: float) -> void:
 	# Handle movement ---
@@ -113,9 +113,5 @@ func _process_aiming(delta: float) -> void:
 	%DebugLookAtPoint.global_position = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y) + global_position
 
 	# Handle Camera ---
-	camera_3D.position = camera_position_aiming
-	camera_3D.rotation = camera_rotation_aiming
-	camera_3D.fov = camera_fov_aiming
-
-	#TODO: Return camera to normal position in platforming state
-	#TODO: Lerp betweeen the two positions
+	camera_3D.position = camera_3D.position.lerp(camera_position_aiming, camera_zoom_speed * delta)
+	camera_3D.fov = lerpf(camera_3D.fov, camera_fov_aiming, camera_zoom_speed * delta)
