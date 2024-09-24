@@ -41,10 +41,12 @@ enum STATE {
 @onready var starting_camera_position = camera_3D.transform
 
 func _physics_process(delta: float) -> void:
+	# TODO: will have to make slightly more complex to handle transitions
+
 	# Handle State change ---
 	if Input.is_action_pressed("aim"):
 		current_state = STATE.AIMING
-	elif Input.is_action_just_pressed("jump"):
+	elif Input.is_action_just_pressed("jump") and is_on_floor():
 		current_state = STATE.JUMPING
 		velocity.y = jump_velocity
 	elif is_on_floor():
@@ -111,13 +113,25 @@ func _process_jumping(delta:float) -> void:
 	velocity += GRAVITY * delta
 	move_and_slide()
 
-	print("velocity: " + str(velocity))
-
 	# TODO: Extract movement into it's own function to be reused
 	# TODO: Adjust look_at such that we always face relative to the ground (eventually gravity when platforms can angle)
 
 	# Handle skin animation ---
-	skin.jump()
+	if not is_on_floor() and velocity.y >= 0:
+		skin.jump()
+	elif not is_on_floor() and velocity.y < 0:
+		skin.fall()
+
+	print("velocity: " + str(velocity))
+
+	# multiply by inverse x and y to account for skin's local axes. Ignore y velocity so the skin stays up right
+	# Add position to make everything relative to where the player is
+	var look_at_direction = (velocity * Vector3(-1, 0, -1)).normalized() + global_position
+	if not (look_at_direction - global_position).is_zero_approx():
+		skin.look_at(look_at_direction)
+
+	# TODO: When state machine handles transitions, smooth increase fov for jumping to make platforming easier
+	#camera_3D.fov = lerpf(camera_3D.fov, 45, camera_zoom_speed * delta)
 
 func _process_aiming(delta: float) -> void:
 	# Handle movement ---
