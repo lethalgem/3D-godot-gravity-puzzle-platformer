@@ -1,13 +1,19 @@
 class_name Player3D extends CharacterBody3D
 
-@export var current_state: STATE = STATE.WALKING: set = _set_current_state
+signal targeting_csg_movable(csg_movable: CSGMovable)
 
-func _set_current_state(new_state: STATE):
+@export var current_state: State = State.WALKING: set = _set_current_state
+
+func _set_current_state(new_state: State):
 	if current_state != new_state:
-		print("entering state: " + STATE.keys()[new_state])
+		print("entering state: " + State.keys()[new_state])
 		current_state = new_state
 
-enum STATE {
+		# TODO: Change state machine to have enter and exit
+		if current_state != State.AIMING:
+			targeting_csg_movable.emit(null)
+
+enum State {
 	WALKING,
 	JUMPING,
 	FALLING,
@@ -18,18 +24,18 @@ enum STATE {
 ## Controls how quickly the player accelerates and turns on the ground.
 @export_range(1.0, 50.0, 0.1) var steering_factor := 20.0
 
-@export_group("STATE WALKING")
+@export_group("State WALKING")
 ## The maximum speed the player can move at in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed := 6.0
 @export_range(1, 179, 1) var camera_fov:= 45
 @export var camera_position := Vector3(0, 4.59, -10)
 @export var camera_rotation := Vector3(deg_to_rad(-20), deg_to_rad(180), deg_to_rad(0))
 
-@export_group("STATE JUMPING")
+@export_group("State JUMPING")
 @export_range(3.0, 12.0, 0.1) var max_air_control_speed := 6.0
 @export_range(1.0, 30.0, 0.1) var jump_velocity := 10.0
 
-@export_group("STATE AIMING")
+@export_group("State AIMING")
 ## The maximum speed the player can move at while aiming in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed_aiming := 3.0
 @export_range(1, 179, 1) var camera_fov_aiming:= 18
@@ -59,23 +65,24 @@ func _handle_movement(delta: float) -> Vector3:
 
 func _physics_process(delta: float) -> void:
 	# TODO: will have to make slightly more complex to handle transitions
+	# Ex. need to handle exiting the aiming state
 
 	# Handle State change ---
 	if Input.is_action_pressed("aim"):
-		current_state = STATE.AIMING
+		current_state = State.AIMING
 	elif Input.is_action_just_pressed("jump") and is_on_floor():
-		current_state = STATE.JUMPING
+		current_state = State.JUMPING
 		velocity.y = jump_velocity
 	elif is_on_floor():
-		current_state = STATE.WALKING
+		current_state = State.WALKING
 
 	# Handle State processing ---
 	match current_state:
-		STATE.WALKING:
+		State.WALKING:
 			_process_platforming(delta)
-		STATE.AIMING:
+		State.AIMING:
 			_process_aiming(delta)
-		STATE.JUMPING:
+		State.JUMPING:
 			_process_jumping(delta)
 
 
@@ -102,7 +109,7 @@ func _process_platforming(delta:float) -> void:
 	camera_3D.fov = lerpf(camera_3D.fov, camera_fov, camera_zoom_speed * delta)
 
 func _process_jumping(delta:float) -> void:
-	var direction = _handle_movement(delta)
+	var _direction = _handle_movement(delta)
 
 	# TODO: Adjust look_at such that we always face relative to the ground (eventually gravity when platforms can angle)
 
@@ -111,8 +118,6 @@ func _process_jumping(delta:float) -> void:
 		skin.jump()
 	elif not is_on_floor() and velocity.y < 0:
 		skin.fall()
-
-	print("velocity: " + str(velocity))
 
 	# multiply by inverse x and y to account for skin's local axes. Ignore y velocity so the skin stays up right
 	# Add position to make everything relative to where the player is
@@ -145,3 +150,25 @@ func _process_aiming(delta: float) -> void:
 	# Handle Camera ---
 	camera_3D.position = camera_3D.position.lerp(camera_position_aiming, camera_zoom_speed * delta)
 	camera_3D.fov = lerpf(camera_3D.fov, camera_fov_aiming, camera_zoom_speed * delta)
+
+	# Handle highlighting ---
+	# Cast a ray from the camera to a set length. If we hit something, check to make sure it's a platform we can move
+	# and highlight it by changing its state
+	var space_state := get_world_3d().direct_space_state
+	# Adjust the origin to be the same distance from the camera as the player is
+	var origin: Vector3 = camera_3D.global_position + (camera_3D.project_ray_normal(camera_3D.get_viewport().size / 2.0) * abs(camera_3D.position.z))
+	var collision_detection_length := 100 # meters
+	var end := origin + (camera_3D.project_ray_normal(camera_3D.get_viewport().size / 2.0) * collision_detection_length)
+	%RayCastBeginDebugPoint.global_position = origin
+	%RayCastEndDebugPoint.global_position = end
+
+	var collision := space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin, end))
+	if not collision.is_empty():
+		print(collision)
+		%RayCastEndDebugPoint.global_position = collision.position
+		if collision.collider is CSGMovable:
+			targeting_csg_movable.emit(collision.collider)
+		else:
+			targeting_csg_movable.emit(null)
+	else:
+		targeting_csg_movable.emit(null)

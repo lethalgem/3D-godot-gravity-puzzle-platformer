@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://bh2vbtqppehd7"]
+[gd_scene load_steps=17 format=3 uid="uid://bh2vbtqppehd7"]
 
 [ext_resource type="Script" path="res://scripts/player_3d.gd" id="1_6sx0b"]
 [ext_resource type="Script" path="res://scripts/game.gd" id="1_mj0j6"]
@@ -36,13 +36,20 @@ volumetric_fog_albedo = Color(0, 0.478431, 0.764706, 1)
 height = 1.8
 radius = 0.6
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t2a7i"]
-albedo_color = Color(1, 0.152941, 1, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1h1o1"]
+albedo_color = Color(1, 0, 1, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2a5yu"]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t2a7i"]
+albedo_color = Color(0.378332, 0.727941, 0.368845, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_d4tfx"]
+albedo_color = Color(1, 0.165521, 0.191423, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mweqs"]
 albedo_texture = ExtResource("7_davof")
-uv1_scale = Vector3(0.25, 0.25, 0.25)
-uv1_triplanar = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tv0fg"]
+albedo_texture = ExtResource("7_davof")
 
 [node name="Game" type="Node3D"]
 script = ExtResource("1_mj0j6")
@@ -96,14 +103,39 @@ script = ExtResource("3_156ww")
 unique_name_in_owner = true
 
 [node name="CSGSphere3D" type="CSGSphere3D" parent="DebugLookAtPoint"]
-material_override = SubResource("StandardMaterial3D_t2a7i")
+material_override = SubResource("StandardMaterial3D_1h1o1")
 radius = 0.2
 
-[node name="CSGMovable" type="CSGCombiner3D" parent="."]
+[node name="RayCastBeginDebugPoint" type="Marker3D" parent="."]
+unique_name_in_owner = true
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="RayCastBeginDebugPoint"]
+material_override = SubResource("StandardMaterial3D_t2a7i")
+radius = 0.02
+
+[node name="RayCastEndDebugPoint" type="Marker3D" parent="."]
+unique_name_in_owner = true
+
+[node name="CSGSphere3D" type="CSGSphere3D" parent="RayCastEndDebugPoint"]
+material_override = SubResource("StandardMaterial3D_d4tfx")
+radius = 0.2
+
+[node name="CSGMovable" type="CSGCombiner3D" parent="." node_paths=PackedStringArray("player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 17)
 use_collision = true
 script = ExtResource("7_ieg5f")
+player = NodePath("../Player3D")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="CSGMovable"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 17)
 size = Vector3(9, 1, 10)
-material = SubResource("StandardMaterial3D_2a5yu")
+material = SubResource("StandardMaterial3D_mweqs")
+
+[node name="CSGMovable2" type="CSGCombiner3D" parent="." node_paths=PackedStringArray("player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 18)
+use_collision = true
+script = ExtResource("7_ieg5f")
+player = NodePath("../Player3D")
+
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGMovable2"]
+size = Vector3(9, 1, 10)
+material = SubResource("StandardMaterial3D_tv0fg")
