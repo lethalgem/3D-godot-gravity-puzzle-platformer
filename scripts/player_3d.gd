@@ -21,7 +21,7 @@ enum STATE {
 @export_group("STATE WALKING")
 ## The maximum speed the player can move at in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed := 6.0
-@export_range(1, 179, 1) var camera_fov:= 38
+@export_range(1, 179, 1) var camera_fov:= 45
 @export var camera_position := Vector3(0, 4.59, -10)
 @export var camera_rotation := Vector3(deg_to_rad(-20), deg_to_rad(180), deg_to_rad(0))
 
@@ -39,6 +39,23 @@ enum STATE {
 @onready var camera_anchor: Node3D = %CameraAnchor
 @onready var camera_3D: Camera3D = %Camera3D
 @onready var starting_camera_position = camera_3D.transform
+
+func _handle_movement(delta: float) -> Vector3:
+	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	# inverse to account for positive player axes and rotate relative to camera forward
+	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y)
+	var desired_ground_velocity := max_speed * direction
+	var steering_vector := desired_ground_velocity - velocity
+	steering_vector.y = 0.0
+	# We limit the steering amount to ensure the velocity can never overshoots the desired velocity.
+	var steering_amount: float = min(steering_factor * delta, 1.0)
+	velocity += steering_vector * steering_amount
+
+	const GRAVITY := 40.0 * Vector3.DOWN
+	velocity += GRAVITY * delta
+	move_and_slide()
+
+	return direction
 
 func _physics_process(delta: float) -> void:
 	# TODO: will have to make slightly more complex to handle transitions
@@ -63,20 +80,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _process_platforming(delta:float) -> void:
-	# Handle movement ---
-	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# inverse to account for positive player axes and rotate relative to camera forward
-	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y)
-	var desired_ground_velocity := max_speed * direction
-	var steering_vector := desired_ground_velocity - velocity
-	steering_vector.y = 0.0
-	# We limit the steering amount to ensure the velocity can never overshoots the desired velocity.
-	var steering_amount: float = min(steering_factor * delta, 1.0)
-	velocity += steering_vector * steering_amount
-
-	const GRAVITY := 40.0 * Vector3.DOWN
-	velocity += GRAVITY * delta
-	move_and_slide()
+	var direction = _handle_movement(delta)
 
 	# Handle skin animation ---
 	if is_on_floor() and not direction.is_zero_approx():
@@ -98,22 +102,8 @@ func _process_platforming(delta:float) -> void:
 	camera_3D.fov = lerpf(camera_3D.fov, camera_fov, camera_zoom_speed * delta)
 
 func _process_jumping(delta:float) -> void:
-	# Handle movement ---
-	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# inverse to account for positive player axes and rotate relative to camera forward
-	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y)
-	var desired_ground_velocity := max_air_control_speed * direction
-	var steering_vector := desired_ground_velocity - velocity
-	steering_vector.y = 0.0
-	# We limit the steering amount to ensure the velocity can never overshoots the desired velocity.
-	var steering_amount: float = min(steering_factor * delta, 1.0)
-	velocity += steering_vector * steering_amount
+	var direction = _handle_movement(delta)
 
-	const GRAVITY := 40.0 * Vector3.DOWN
-	velocity += GRAVITY * delta
-	move_and_slide()
-
-	# TODO: Extract movement into it's own function to be reused
 	# TODO: Adjust look_at such that we always face relative to the ground (eventually gravity when platforms can angle)
 
 	# Handle skin animation ---
@@ -130,24 +120,14 @@ func _process_jumping(delta:float) -> void:
 	if not (look_at_direction - global_position).is_zero_approx():
 		skin.look_at(look_at_direction)
 
+	# follow player movement vector, not skin's
+	%DebugLookAtPoint.global_position = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y) + global_position
+
 	# TODO: When state machine handles transitions, smooth increase fov for jumping to make platforming easier
 	#camera_3D.fov = lerpf(camera_3D.fov, 45, camera_zoom_speed * delta)
 
 func _process_aiming(delta: float) -> void:
-	# Handle movement ---
-	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	# inverse to account for positive player axes and rotate relative to camera forward
-	var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), camera_anchor.rotation.y)
-	var desired_ground_velocity := max_speed_aiming * direction
-	var steering_vector := desired_ground_velocity - velocity
-	steering_vector.y = 0.0
-	# We limit the steering amount to ensure the velocity can never overshoots the desired velocity.
-	var steering_amount: float = min(steering_factor * delta, 1.0)
-	velocity += steering_vector * steering_amount
-
-	const GRAVITY := 40.0 * Vector3.DOWN
-	velocity += GRAVITY * delta
-	move_and_slide()
+	var direction = _handle_movement(delta)
 
 	# Handle skin animation ---
 	if is_on_floor() and not direction.is_zero_approx():
