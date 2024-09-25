@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bh2vbtqppehd7"]
+[gd_scene load_steps=14 format=3 uid="uid://bh2vbtqppehd7"]
 
 [ext_resource type="Script" path="res://scripts/player_3d.gd" id="1_6sx0b"]
 [ext_resource type="Script" path="res://scripts/game.gd" id="1_mj0j6"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" uid="uid://prh35jb6tjtd" path="res://assets/models/sophia/sophia_skin.tscn" id="2_uhobi"]
 [ext_resource type="Script" path="res://scripts/camera_3d.gd" id="3_156ww"]
 [ext_resource type="Script" path="res://scripts/camera_anchor.gd" id="3_c3sdl"]
+[ext_resource type="Texture2D" uid="uid://ck54ycnjosij8" path="res://assets/textures/prototype_surface_2.png" id="7_davof"]
+[ext_resource type="Script" path="res://scripts/csg_movable.gd" id="7_ieg5f"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gcn8a"]
 albedo_color = Color(0.0482739, 0.26725, 0.311615, 1)
@@ -36,6 +38,11 @@ radius = 0.6
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t2a7i"]
 albedo_color = Color(1, 0.152941, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2a5yu"]
+albedo_texture = ExtResource("7_davof")
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+uv1_triplanar = true
 
 [node name="Game" type="Node3D"]
 script = ExtResource("1_mj0j6")
@@ -91,3 +98,12 @@ unique_name_in_owner = true
 [node name="CSGSphere3D" type="CSGSphere3D" parent="DebugLookAtPoint"]
 material_override = SubResource("StandardMaterial3D_t2a7i")
 radius = 0.2
+
+[node name="CSGMovable" type="CSGCombiner3D" parent="."]
+use_collision = true
+script = ExtResource("7_ieg5f")
+
+[node name="CSGBox3D" type="CSGBox3D" parent="CSGMovable"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 17)
+size = Vector3(9, 1, 10)
+material = SubResource("StandardMaterial3D_2a5yu")
