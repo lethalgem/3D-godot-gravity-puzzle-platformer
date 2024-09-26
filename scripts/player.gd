@@ -152,6 +152,8 @@ class StateMachine extends Node:
 
 class StateIdle extends State:
 
+	var camera_zoom_speed := 40.0
+
 	func _init(init_player: Player3D) -> void:
 		super("Idle", init_player)
 
@@ -173,8 +175,8 @@ class StateIdle extends State:
 		player.debug_look_at_point.global_position = player.velocity.normalized() + player.global_position
 
 		# Handle camera ---
-		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position, player.camera_zoom_speed * _delta)
-		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov, player.camera_zoom_speed * _delta)
+		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position, camera_zoom_speed * _delta)
+		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov, camera_zoom_speed * _delta)
 
 		if not direction.is_zero_approx():
 			return Events.PLAYER_STARTED_MOVING
@@ -189,6 +191,7 @@ class StateWalk extends State:
 
 	var max_speed = 10.0
 	var steering_factor = 20.0
+	var camera_zoom_speed := 40.0
 
 	func _init(init_player: Player3D) -> void:
 		super("Walk", init_player)
@@ -221,8 +224,8 @@ class StateWalk extends State:
 		player.debug_look_at_point.global_position = player.velocity.normalized() + player.global_position
 
 		# Handle camera ---
-		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position, player.camera_zoom_speed * _delta)
-		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov, player.camera_zoom_speed * _delta)
+		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position, camera_zoom_speed * _delta)
+		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov, camera_zoom_speed * _delta)
 
 		if direction.is_zero_approx():
 			return Events.PLAYER_STOPPED_MOVING
@@ -234,6 +237,7 @@ class StateWalk extends State:
 
 # TODO: When state machine handles transitions, smooth increase fov for jumping to make platforming easier
 # camera_3D.fov = lerpf(camera_3D.fov, 45, camera_zoom_speed * delta)
+# TODO: Fire off tween on camera zoom and position, so jump handles the zooms and the other states don't have to care
 # TODO: Adjust look_at such that we always face relative to the ground (eventually gravity when platforms can angle)
 class StateJump extends State:
 
@@ -317,14 +321,21 @@ class StateFall extends State:
 		return Events.NONE
 
 
+# TODO: Fire off tween on camera zoom and position, so aim handles the zooms and the other states don't have to care
 class StateAim extends State:
 
 	var max_speed = 10.0
 	var steering_factor = 20.0
 	var collision_detection_length := 100 # meters
+	var camera_zoom_speed := 40.0
+	var camera_fov := 18
+	var camera_position := Vector3(-0.995, 4.16, -10)
 
 	func _init(init_player: Player3D) -> void:
 		super("Aim", init_player)
+
+	func exit() -> void:
+		player.targeting_csg_movable.emit(null)
 
 	func update(_delta: float) -> Events:
 		var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -354,8 +365,8 @@ class StateAim extends State:
 		player.debug_look_at_point.global_position = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), player.camera_anchor.rotation.y) + player.global_position
 
 		# Handle Camera ---
-		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position_aiming, player.camera_zoom_speed * _delta)
-		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov_aiming, player.camera_zoom_speed * _delta)
+		player.camera_3D.position = player.camera_3D.position.lerp(camera_position, camera_zoom_speed * _delta)
+		player.camera_3D.fov = lerpf(player.camera_3D.fov, camera_fov, camera_zoom_speed * _delta)
 
 		# Handle highlighting ---
 		# Cast a ray from the camera to a set length. If we hit something, check to make sure it's a platform we can move
