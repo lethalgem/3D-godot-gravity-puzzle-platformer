@@ -2,25 +2,6 @@ class_name Player3D extends CharacterBody3D
 
 signal targeting_csg_movable(csg_movable: CSGMovable)
 
-@export var current_state: State = State.WALKING: set = _set_current_state
-
-func _set_current_state(new_state: State):
-	if current_state != new_state:
-		print("entering state: " + State.keys()[new_state])
-		current_state = new_state
-
-		# TODO: Change state machine to have enter and exit
-		if current_state != State.AIMING:
-			targeting_csg_movable.emit(null)
-
-enum State {
-	WALKING,
-	JUMPING,
-	FALLING,
-	AIMING,
-}
-
-
 ## Controls how quickly the player accelerates and turns on the ground.
 @export_range(1.0, 50.0, 0.1) var steering_factor := 20.0
 
