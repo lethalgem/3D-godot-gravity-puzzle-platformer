@@ -78,8 +78,6 @@ environment = SubResource("Environment_ef70l")
 
 [node name="Player3D" type="CharacterBody3D" parent="."]
 script = ExtResource("1_6sx0b")
-jump_velocity = 15.0
-camera_position_aiming = Vector3(-2.005, 4.435, -10)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -0.2)
@@ -95,9 +93,17 @@ script = ExtResource("3_c3sdl")
 
 [node name="Camera3D" type="Camera3D" parent="Player3D/CameraAnchor"]
 unique_name_in_owner = true
-transform = Transform3D(-1, 2.99004e-08, -8.21506e-08, 0, 0.939693, 0.34202, 8.74228e-08, 0.34202, -0.939693, 0, 4.59, -10)
+transform = Transform3D(-1, 2.99004e-08, -8.21506e-08, 0, 0.939693, 0.34202, 8.74228e-08, 0.34202, -0.939693, -0.995, 4.16, -10)
 fov = 38.0
 script = ExtResource("3_156ww")
+
+[node name="DebugStateLabel3D" type="Label3D" parent="Player3D"]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+billboard = 1
+text = "State"
+font_size = 72
+outline_size = 24
 
 [node name="DebugLookAtPoint" type="Marker3D" parent="."]
 unique_name_in_owner = true
@@ -106,17 +112,17 @@ unique_name_in_owner = true
 material_override = SubResource("StandardMaterial3D_1h1o1")
 radius = 0.2
 
-[node name="RayCastBeginDebugPoint" type="Marker3D" parent="."]
+[node name="DebugAimRaycastBeginPoint" type="Marker3D" parent="."]
 unique_name_in_owner = true
 
-[node name="CSGSphere3D" type="CSGSphere3D" parent="RayCastBeginDebugPoint"]
+[node name="CSGSphere3D" type="CSGSphere3D" parent="DebugAimRaycastBeginPoint"]
 material_override = SubResource("StandardMaterial3D_t2a7i")
 radius = 0.02
 
-[node name="RayCastEndDebugPoint" type="Marker3D" parent="."]
+[node name="DebugAimRaycastEndPoint" type="Marker3D" parent="."]
 unique_name_in_owner = true
 
-[node name="CSGSphere3D" type="CSGSphere3D" parent="RayCastEndDebugPoint"]
+[node name="CSGSphere3D" type="CSGSphere3D" parent="DebugAimRaycastEndPoint"]
 material_override = SubResource("StandardMaterial3D_d4tfx")
 radius = 0.2
 

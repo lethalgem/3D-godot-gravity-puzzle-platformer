@@ -39,12 +39,51 @@ enum State {
 ## The maximum speed the player can move at while aiming in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed_aiming := 3.0
 @export_range(1, 179, 1) var camera_fov_aiming:= 18
-@export var camera_position_aiming := Vector3(-0.995, 1.635, -10)
+@export var camera_position_aiming := Vector3(-0.995, 4.16, -10)
 
 @onready var skin: SophiaSkin3D = %SophiaSkin
 @onready var camera_anchor: Node3D = %CameraAnchor
 @onready var camera_3D: Camera3D = %Camera3D
 @onready var starting_camera_position = camera_3D.transform
+@onready var debug_state_label = %DebugStateLabel3D
+@onready var debug_look_at_point = %DebugLookAtPoint
+@onready var debug_aim_raycast_begin_point = %DebugAimRaycastBeginPoint
+@onready var debug_aim_raycast_end_point = %DebugAimRaycastEndPoint
+
+func _ready() -> void:
+	var state_machine := Player.StateMachine.new()
+	add_child(state_machine)
+
+	var idle := Player.StateIdle.new(self)
+	var walk := Player.StateWalk.new(self)
+	var jump := Player.StateJump.new(self)
+	var fall := Player.StateFall.new(self)
+	var aim := Player.StateAim.new(self)
+
+	state_machine.transitions = {
+		idle: {
+			Player.Events.PLAYER_STARTED_MOVING: walk,
+			Player.Events.PLAYER_JUMPED: jump,
+			Player.Events.PLAYER_STARTED_AIMING: aim,
+		},
+		walk: {
+			Player.Events.PLAYER_STOPPED_MOVING: idle,
+			Player.Events.PLAYER_JUMPED: jump,
+			Player.Events.PLAYER_STARTED_AIMING: aim,
+		},
+		jump: {
+			Player.Events.PLAYER_STARTED_FALLING: fall,
+		},
+		fall: {
+			Player.Events.PLAYER_LANDED: idle,
+		},
+		aim: {
+			Player.Events.PLAYER_STOPPED_AIMING: idle,
+		}
+	}
+
+	state_machine.activate(idle)
+	state_machine.is_debugging = true
 
 func _handle_movement(delta: float) -> Vector3:
 	var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -59,31 +98,34 @@ func _handle_movement(delta: float) -> Vector3:
 
 	const GRAVITY := 40.0 * Vector3.DOWN
 	velocity += GRAVITY * delta
-	move_and_slide()
+	#move_and_slide()
 
 	return direction
 
 func _physics_process(delta: float) -> void:
+
+	pass
+
 	# TODO: will have to make slightly more complex to handle transitions
 	# Ex. need to handle exiting the aiming state
 
-	# Handle State change ---
-	if Input.is_action_pressed("aim"):
-		current_state = State.AIMING
-	elif Input.is_action_just_pressed("jump") and is_on_floor():
-		current_state = State.JUMPING
-		velocity.y = jump_velocity
-	elif is_on_floor():
-		current_state = State.WALKING
-
-	# Handle State processing ---
-	match current_state:
-		State.WALKING:
-			_process_platforming(delta)
-		State.AIMING:
-			_process_aiming(delta)
-		State.JUMPING:
-			_process_jumping(delta)
+	## Handle State change ---
+	#if Input.is_action_pressed("aim"):
+		#current_state = State.AIMING
+	#elif Input.is_action_just_pressed("jump") and is_on_floor():
+		#current_state = State.JUMPING
+		#velocity.y = jump_velocity
+	#elif is_on_floor():
+		#current_state = State.WALKING
+#
+	## Handle State processing ---
+	#match current_state:
+		#State.WALKING:
+			#_process_platforming(delta)
+		#State.AIMING:
+			#_process_aiming(delta)
+		#State.JUMPING:
+			#_process_jumping(delta)
 
 
 func _process_platforming(delta:float) -> void:

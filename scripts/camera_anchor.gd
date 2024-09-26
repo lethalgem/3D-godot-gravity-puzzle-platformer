@@ -1,5 +1,6 @@
 extends Node3D
 
+# TODO: Lower (actually increase this number) sensitivity when aiming
 @export var camera_sensitivity := 100.0
 
 func _unhandled_input(event):
