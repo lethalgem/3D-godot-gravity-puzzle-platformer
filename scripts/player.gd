@@ -6,7 +6,6 @@ enum Events {
 	PLAYER_STARTED_MOVING,
 	PLAYER_STOPPED_MOVING,
 	PLAYER_JUMPED,
-	PLAYER_STARTED_FALLING,
 	PLAYER_LANDED,
 	PLAYER_STARTED_AIMING,
 	PLAYER_STOPPED_AIMING,
@@ -222,15 +221,17 @@ class StateWalk extends State:
 			return Events.PLAYER_STARTED_AIMING
 		return Events.NONE
 
-# TODO: When state machine handles transitions, smooth increase fov for jumping to make platforming easier
-# camera_3D.fov = lerpf(camera_3D.fov, 45, camera_zoom_speed * delta)
-# TODO: Fire off tween on camera zoom and position, so jump handles the zooms and the other states don't have to care
+
 # TODO: Adjust look_at such that we always face relative to the ground (eventually gravity when platforms can angle)
 class StateJump extends State:
 
-	var jump_velocity = 10.0
-	var max_speed = 10.0
-	var steering_factor = 20.0
+	var jump_velocity := 15.0
+	var max_speed := 10.0
+	var steering_factor := 20.0
+	var camera_fov := 45 # degrees
+	var camera_zoom_time = 0.25 # seconds
+
+	var _initial_camera_fov: int
 
 	func _init(init_player: Player3D) -> void:
 		super("Jump", init_player)
@@ -239,6 +240,15 @@ class StateJump extends State:
 		player.skin.jump()
 		player.velocity.y = jump_velocity
 
+		_initial_camera_fov = player.camera_3D.fov
+
+		var tween = player.create_tween()
+		tween.parallel().tween_property(player.camera_3D, "fov", camera_fov, camera_zoom_time).set_ease(Tween.EASE_IN_OUT)
+
+	func exit() -> void:
+		var tween = player.create_tween()
+		tween.parallel().tween_property(player.camera_3D, "fov", _initial_camera_fov, camera_zoom_time).set_ease(Tween.EASE_IN_OUT)
+
 	func update(_delta: float) -> Events:
 		var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 		# inverse to account for positive player axes and rotate relative to camera forward
@@ -253,46 +263,9 @@ class StateJump extends State:
 		const GRAVITY := 40.0 * Vector3.DOWN
 		player.velocity += GRAVITY * _delta
 		player.move_and_slide()
-
-		# multiply by inverse x and y to account for skin's local axes. Ignore y velocity so the skin stays up right
-		# Add position to make everything relative to where the player is
-		var look_at_direction := (player.velocity * Vector3(-1, 0, -1)).normalized() + player.global_position
-		if not (look_at_direction - player.global_position).is_zero_approx():
-			player.skin.look_at(look_at_direction)
-
-		# follow player movement vector, not skin's
-		player.debug_look_at_point.global_position = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), player.camera_anchor.rotation.y) + player.global_position
 
 		if player.velocity.y <= 0:
-			return Events.PLAYER_STARTED_FALLING
-		return Events.NONE
-
-
-class StateFall extends State:
-
-	var max_speed = 10.0
-	var steering_factor = 20.0
-
-	func _init(init_player: Player3D) -> void:
-		super("Fall", init_player)
-
-	func enter() -> void:
-		player.skin.fall()
-
-	func update(_delta: float) -> Events:
-		var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-		# inverse to account for positive player axes and rotate relative to camera forward
-		var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), player.camera_anchor.rotation.y)
-		var desired_ground_velocity: Vector3 = max_speed * direction
-		var steering_vector := desired_ground_velocity - player.velocity
-		steering_vector.y = 0.0
-		# We limit the steering amount to ensure the velocity can never overshoots the desired velocity.
-		var steering_amount: float = min(steering_factor * _delta, 1.0)
-		player.velocity += steering_vector * steering_amount
-
-		const GRAVITY := 40.0 * Vector3.DOWN
-		player.velocity += GRAVITY * _delta
-		player.move_and_slide()
+			player.skin.fall()
 
 		# multiply by inverse x and y to account for skin's local axes. Ignore y velocity so the skin stays up right
 		# Add position to make everything relative to where the player is
@@ -307,8 +280,6 @@ class StateFall extends State:
 			return Events.PLAYER_LANDED
 		return Events.NONE
 
-
-# TODO: Fire off tween on camera zoom and position, so aim handles the zooms and the other states don't have to care
 class StateAim extends State:
 
 	var max_speed = 10.0
@@ -329,15 +300,15 @@ class StateAim extends State:
 		_initial_camera_fov = player.camera_3D.fov
 
 		var tween = player.create_tween()
-		tween.tween_property(player.camera_3D, "position", camera_position, camera_zoom_time)
-		tween.parallel().tween_property(player.camera_3D, "fov", camera_fov, camera_zoom_time)
+		tween.tween_property(player.camera_3D, "position", camera_position, camera_zoom_time).set_ease(Tween.EASE_IN_OUT)
+		tween.parallel().tween_property(player.camera_3D, "fov", camera_fov, camera_zoom_time).set_ease(Tween.EASE_IN_OUT)
 
 	func exit() -> void:
 		player.targeting_csg_movable.emit(null)
 
 		var tween = player.create_tween()
-		tween.tween_property(player.camera_3D, "position", _initial_camera_position, camera_zoom_time)
-		tween.parallel().tween_property(player.camera_3D, "fov", _initial_camera_fov, camera_zoom_time)
+		tween.tween_property(player.camera_3D, "position", _initial_camera_position, camera_zoom_time).set_ease(Tween.EASE_IN_OUT)
+		tween.parallel().tween_property(player.camera_3D, "fov", _initial_camera_fov, camera_zoom_time).set_ease(Tween.EASE_IN_OUT)
 
 	func update(_delta: float) -> Events:
 		var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
