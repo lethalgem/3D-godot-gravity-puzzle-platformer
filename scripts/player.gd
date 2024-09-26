@@ -152,8 +152,6 @@ class StateMachine extends Node:
 
 class StateIdle extends State:
 
-	var camera_zoom_speed := 40.0
-
 	func _init(init_player: Player3D) -> void:
 		super("Idle", init_player)
 
@@ -162,8 +160,6 @@ class StateIdle extends State:
 
 	func update(_delta: float) -> Events:
 		var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-		# inverse to account for positive player axes and rotate relative to camera forward
-		var direction := Vector3(-input_vector.x, 0.0, -input_vector.y).rotated(Vector3(0, 1, 0), player.camera_anchor.rotation.y)
 
 		# multiply by inverse x and y to account for skin's local axes.
 		# Add position to make everything relative to where the player is
@@ -174,11 +170,7 @@ class StateIdle extends State:
 		# follow player movement vector, not skin's
 		player.debug_look_at_point.global_position = player.velocity.normalized() + player.global_position
 
-		# Handle camera ---
-		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position, camera_zoom_speed * _delta)
-		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov, camera_zoom_speed * _delta)
-
-		if not direction.is_zero_approx():
+		if not input_vector.is_zero_approx():
 			return Events.PLAYER_STARTED_MOVING
 		elif Input.is_action_just_pressed("jump"):
 			return Events.PLAYER_JUMPED
@@ -191,7 +183,6 @@ class StateWalk extends State:
 
 	var max_speed = 10.0
 	var steering_factor = 20.0
-	var camera_zoom_speed := 40.0
 
 	func _init(init_player: Player3D) -> void:
 		super("Walk", init_player)
@@ -222,10 +213,6 @@ class StateWalk extends State:
 
 		# follow player movement vector, not skin's
 		player.debug_look_at_point.global_position = player.velocity.normalized() + player.global_position
-
-		# Handle camera ---
-		player.camera_3D.position = player.camera_3D.position.lerp(player.camera_position, camera_zoom_speed * _delta)
-		player.camera_3D.fov = lerpf(player.camera_3D.fov, player.camera_fov, camera_zoom_speed * _delta)
 
 		if direction.is_zero_approx():
 			return Events.PLAYER_STOPPED_MOVING
@@ -327,15 +314,30 @@ class StateAim extends State:
 	var max_speed = 10.0
 	var steering_factor = 20.0
 	var collision_detection_length := 100 # meters
-	var camera_zoom_speed := 40.0
-	var camera_fov := 18
+	var camera_zoom_time := 0.05 # seconds
+	var camera_fov := 18 # degrees
 	var camera_position := Vector3(-0.995, 4.16, -10)
+
+	var _initial_camera_position: Vector3
+	var _initial_camera_fov: int
 
 	func _init(init_player: Player3D) -> void:
 		super("Aim", init_player)
 
+	func enter() -> void:
+		_initial_camera_position = player.camera_3D.position
+		_initial_camera_fov = player.camera_3D.fov
+
+		var tween = player.create_tween()
+		tween.tween_property(player.camera_3D, "position", camera_position, camera_zoom_time)
+		tween.parallel().tween_property(player.camera_3D, "fov", camera_fov, camera_zoom_time)
+
 	func exit() -> void:
 		player.targeting_csg_movable.emit(null)
+
+		var tween = player.create_tween()
+		tween.tween_property(player.camera_3D, "position", _initial_camera_position, camera_zoom_time)
+		tween.parallel().tween_property(player.camera_3D, "fov", _initial_camera_fov, camera_zoom_time)
 
 	func update(_delta: float) -> Events:
 		var input_vector := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -363,10 +365,6 @@ class StateAim extends State:
 
 		# follow player movement vector, not skin's
 		player.debug_look_at_point.global_position = Vector3(0, 0, 1).rotated(Vector3(0, 1, 0), player.camera_anchor.rotation.y) + player.global_position
-
-		# Handle Camera ---
-		player.camera_3D.position = player.camera_3D.position.lerp(camera_position, camera_zoom_speed * _delta)
-		player.camera_3D.fov = lerpf(player.camera_3D.fov, camera_fov, camera_zoom_speed * _delta)
 
 		# Handle highlighting ---
 		# Cast a ray from the camera to a set length. If we hit something, check to make sure it's a platform we can move

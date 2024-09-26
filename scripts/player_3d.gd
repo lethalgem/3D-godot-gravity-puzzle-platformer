@@ -20,16 +20,13 @@ enum State {
 	AIMING,
 }
 
-@export_range(1, 50.0, 0.1) var camera_zoom_speed := 40.0
+@export_range(0.001, 1, 0.01) var camera_zoom_time := 0.05
 ## Controls how quickly the player accelerates and turns on the ground.
 @export_range(1.0, 50.0, 0.1) var steering_factor := 20.0
 
 @export_group("State WALKING")
 ## The maximum speed the player can move at in meters per second.
 @export_range(3.0, 12.0, 0.1) var max_speed := 6.0
-@export_range(1, 179, 1) var camera_fov:= 45
-@export var camera_position := Vector3(0, 4.59, -10)
-@export var camera_rotation := Vector3(deg_to_rad(-20), deg_to_rad(180), deg_to_rad(0))
 
 @export_group("State JUMPING")
 @export_range(3.0, 12.0, 0.1) var max_air_control_speed := 6.0
@@ -54,10 +51,8 @@ func _ready() -> void:
 	add_child(state_machine)
 
 	var idle := Player.StateIdle.new(self)
-	idle.camera_zoom_speed = camera_zoom_speed
 
 	var walk := Player.StateWalk.new(self)
-	walk.camera_zoom_speed = camera_zoom_speed
 	walk.max_speed = max_speed
 
 	var jump := Player.StateJump.new(self)
@@ -68,7 +63,7 @@ func _ready() -> void:
 	fall.max_speed = max_air_control_speed
 
 	var aim := Player.StateAim.new(self)
-	aim.camera_zoom_speed = camera_zoom_speed
+	aim.camera_zoom_time = camera_zoom_time
 	aim.max_speed = max_speed_aiming
 	aim.camera_fov = camera_fov_aiming
 
